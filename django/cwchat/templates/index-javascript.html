@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM 聊天机器人</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .chat-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 320px;
+        }
+        .chat-message {
+            margin-bottom: 10px;
+        }
+        .user-message, .bot-message {
+            border: 0;
+            margin-right: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+        }
+        .bot-message {
+            background-color: #e6f7ff;
+            align-self: flex-start;
+            /* 由于LLM大模型返回的文本是带换行的，但是到了前端直接显示的话，没有换行，于是搜文心一言：html+javascript怎么正确显示从后端传过来的带\r\n回车换行的字串，文心一言给出了下面这一段CSS代码，经测试可以做到强制换行 */
+            white-space: pre-wrap;/* 默认是normal，但normal下文本中的\r\n换行符会被当作普通的空白字符处理，并且通常会被浏览器忽略，因为normal值会合并连续的空白字符并将它们替换为一个空格，同时文本会自动换行以适应容器的宽度。这意味着\r\n换行符在视觉上不会造成换行效果。 */
+            word-wrap: break-word; /* 或者使用 overflow-wrap: break-word; */
+            width: 100%; /* 或者设置具体的宽度 */
+        }
+        pre {
+            font-size: 14px; /* 设置全局<pre>标签的字体大小 */
+        }
+        .chat-input {
+            margin-top: 20px;
+            width: 100%;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .chat-button {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages"></div>
+        <input type="text" class="chat-input" id="chatInput" placeholder="输入你的消息...">
+        <button class="chat-button" id="chatButton">发送</button>
+    </div>
+</body>
+</html>
+
+<script>
+    // 定义一个异步函数来发送HTTP请求
+    async function sendHttpRequest(input) {
+        try {
+            // 定义参数
+            const params = new URLSearchParams({
+                token: 'value1',
+                your_name: 'Catherine',
+                query: input
+            });
+
+            // 构建完整的 URL
+            const url = `http://localhost:8000/chat/api?${params.toString()}`;
+    
+            // 发送 GET 请求
+            const response = await fetch(url);            
+
+            // 检查响应状态
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+    
+            // 将响应转换为JSON格式
+            const data = await response.json();
+    
+            // 输出响应数据
+            console.log('Response data:', data);
+
+            // 添加机器人消息
+            addBotMessage(data["response"]);
+        } catch (error) {
+            // 捕获并处理错误
+            console.error('Error:', error);
+        }
+    }
+
+    // 发送消息
+    function sendMessage() {
+        const input = document.getElementById('chatInput').value.trim();
+        if (input) {
+            // 添加用户消息到界面
+            addUserMessage(input);
+            // 发送消息
+            sendHttpRequest(input);
+        }
+    }
+
+    // 添加用户消息到界面
+    function addUserMessage(message) {
+        const chatMessages = document.getElementById('chatMessages');
+
+        // 添加用户消息
+        const userMessage = document.createElement('div');
+        userMessage.classList.add('chat-message', 'user-message');
+        userMessage.textContent = message;
+        chatMessages.appendChild(userMessage);
+
+        // 清空输入框
+        document.getElementById('chatInput').value = '';
+    }
+
+    // 添加机器人消息到界面
+    function addBotMessage(message) {
+        const chatMessages = document.getElementById('chatMessages');
+
+        // 添加机器人消息
+        const botMessage = document.createElement('pre');
+        botMessage.classList.add('chat-message', 'bot-message');
+        botMessage.textContent  = message;
+        chatMessages.appendChild(botMessage);
+
+        // 清空输入框
+        document.getElementById('chatInput').value = '';
+        // 滚动到底部
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // 事件监听: 为chatButton添加 click 点击事件监听器，监听点击事件，并调用sendMessage函数
+	document.getElementById('chatButton').addEventListener('click', sendMessage);
+
+    // 事件监听: 为chatInput添加 keypress 键盘事件监听器，监听回车键（不同时按shift键），并调用sendMessage函数
+	document.getElementById('chatInput').addEventListener('keypress', function(event) {
+    	if (event.key === 'Enter' && !event.shiftKey) {
+        	sendMessage();
+    	}
+	});
+
+</script>

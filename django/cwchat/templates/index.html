@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM 聊天机器人</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .chat-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        .chat-message {
+            margin-bottom: 10px;
+        }
+        .user-message, .bot-message {
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+        }
+        .bot-message {
+            background-color: #e6f7ff;
+            align-self: flex-start;
+        }
+        .chat-input {
+            margin-top: 20px;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .chat-button {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages"></div>
+        <input type="text" class="chat-input" id="chatInput" placeholder="输入你的消息...">
+        <button class="chat-button" id="chatButton">发送</button>
+    </div>
+</body>
+</html>
+
+<script>
+    // 连接 WebSocket
+    const ws = new WebSocket('ws://localhost:8000/chat');
+    ws.onopen = () => {
+            console.log('Connected to server');
+        };
+    
+    // 接收消息
+    ws.onmessage = (event) => {
+        const li = document.createElement('li');
+        li.textContent = event.data;
+
+        // 添加机器人消息
+        const botMessage = document.createElement('div');
+        botMessage.classList.add('chat-message', 'bot-message');
+        botMessage.textContent = li;
+        chatMessages.appendChild(botMessage);
+
+        // 清空输入框
+        document.getElementById('chatInput').value = '';
+
+        // 滚动到底部
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    };
+
+    // 断开连接
+    ws.onclose = () => {
+        console.log('Disconnected from server');
+    };
+
+    // 发送消息
+    function sendMessage() {
+        const input = document.getElementById('chatInput').value.trim();
+        if (input) {
+            const chatMessages = document.getElementById('chatMessages');
+    
+            // 添加用户消息
+            const userMessage = document.createElement('div');
+            userMessage.classList.add('chat-message', 'user-message');
+            userMessage.textContent = input;
+            chatMessages.appendChild(userMessage);
+    
+            // 发送消息
+            ws.send(input);
+        }
+    }
+
+	document.getElementById('chatButton').addEventListener('click', sendMessage);
+	document.getElementById('chatInput').addEventListener('keypress', function(event) {
+    	if (event.key === 'Enter' && !event.shiftKey) {
+        	sendMessage();
+    	}
+	});
+
+</script>
