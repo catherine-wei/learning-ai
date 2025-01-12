@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LLM 聊天机器人</title>
+    <title>Catherine's Chatbot</title>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js"></script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,18 +20,29 @@
             margin: 0;
             background-color: #f0f0f0;
         }
-        .chat-container {
+        .session-container {
             background-color: #fff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 300px;
+            width: 320px;
+        }
+        .chat-container {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 320px;
+            height: 75vh; /* 高度设置为屏幕高度的 75% */
+            overflow-y: auto; /* 当内容超出容器高度时，在右侧显示滚动条 */
+            max-height: 100%; /* 确保高度不会超过视口高度（在某些情况下可能是多余的，但可以增加兼容性） */
         }
         .chat-message {
             margin-bottom: 10px;
         }
         .user-message, .bot-message {
-            padding: 10px;
+            border: 0;
+            margin-right: 10px;
             border-radius: 5px;
         }
         .user-message {
@@ -36,11 +52,19 @@
         .bot-message {
             background-color: #e6f7ff;
             align-self: flex-start;
+            /* 由于LLM大模型返回的文本是带换行的，但是到了前端直接显示的话，没有换行，于是搜文心一言：html+javascript怎么正确显示从后端传过来的带\r\n回车换行的字串，文心一言给出了下面这一段CSS代码，经测试可以做到强制换行 */
+            white-space: pre-wrap;/* 默认是normal，但normal下文本中的\r\n换行符会被当作普通的空白字符处理，并且通常会被浏览器忽略，因为normal值会合并连续的空白字符并将它们替换为一个空格，同时文本会自动换行以适应容器的宽度。这意味着\r\n换行符在视觉上不会造成换行效果。 */
+            word-wrap: break-word; /* 或者使用 overflow-wrap: break-word; */
+            width: 100%; /* 或者设置具体的宽度 */
+        }
+        pre {
+            font-size: 14px; /* 设置全局<pre>标签的字体大小 */
         }
         .chat-input {
             margin-top: 20px;
             width: 100%;
-            padding: 10px;
+            padding-top: 10px;
+            padding-bottom: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
@@ -58,6 +82,13 @@
 <body>
     <div class="chat-container">
         <div class="chat-messages" id="chatMessages"></div>
+    </div>
+    <div class="session-container">
+        <select id="mySelect">
+            <option value="option1">选项一</option>
+            <option value="option2">选项二</option>
+            <option value="option3">选项三</option>
+        </select>
         <input type="text" class="chat-input" id="chatInput" placeholder="输入你的消息...">
         <button class="chat-button" id="chatButton">发送</button>
     </div>
@@ -65,57 +96,164 @@
 </html>
 
 <script>
-    // 连接 WebSocket
-    const ws = new WebSocket('ws://localhost:8000/chat');
-    ws.onopen = () => {
-            console.log('Connected to server');
-        };
+    var user_id = "";
+    var user_name = "Catherine";
+    var session_id = "";
+    var agent_id = "";
+    var token = "123456";
+
+    $(document).ready(function() {
+        // 获取 select 元素
+        var selectElement = document.getElementById('mySelect');
+
+        // 从后端获取 chat session options
+        $.ajax({
+                url: '{% url "chatsessions" %}',  // 使用Django模板标签生成URL
+                type: 'GET',
+                dataType: 'json',
+                data: {token: token, user_id: user_id}, 
+                success: function(data) {
+                    var select = $('#mySelect');
+                    // console.log("data: " + JSON.stringify(data));
+                    select.empty();  // 清空已有的选项
+                    $.each(data, function(index, option) {
+                        select.append(
+                            $('<option></option>').val(option.value).text(option.text)
+                        );
+                    });
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error('Error fetching options:', textStatus, errorThrown);
+                }
+            });
+
+        // 
+        // 事件监听: 添加session列表框的change事件监听器
+        selectElement.addEventListener('change', function() {
+            // 当选项发生变化时执行的代码
+            console.log('选项已发生变化:', selectElement.value);
+            $.ajax({
+                url: '{% url "session_msgs" %}', 
+                type: 'GET',
+                dataType: "json", 
+                data: { token: token, user_id: user_id, session_id: selectElement.value },  // 将输入值发送到服务器以获取选项
+                success: function(data) {
+                    console.log("data=" + JSON.stringify(data));
+
+                    // 记住当前选中的session_id，后面聊天时以这个session_id来进行
+                    session_id = selectElement.value;
+
+                    // 清空现有的聊天记录
+                    const chatMessages = document.getElementById('chatMessages');
+                    chatMessages.innerHTML = "";
+
+                    // 将后端返回的聊天记录列表遍历，并逐一添加到聊天记录里
+                    $.each(data, function(index, msg) {
+                        if (msg.sender_type == 0) {
+                            addUserMessage(msg.content);
+                        } else {
+                            addBotMessage(msg.content);
+                        }
+                    });
+                }, 
+
+            });
+        });
+
+        // 事件监听: 为chatButton添加 click 点击事件监听器，监听点击事件，并调用sendMessage函数
+        document.getElementById('chatButton').addEventListener('click', sendMessage);
+
+        // 事件监听: 为chatInput添加 keypress 键盘事件监听器，监听回车键（不同时按shift键），并调用sendMessage函数
+        document.getElementById('chatInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                sendMessage();
+            }
+        });
+
+    });
+
+    // 定义一个异步函数来发送HTTP请求
+    async function sendHttpRequest(input) {
+        try {
+            // 定义参数
+            const params = new URLSearchParams({
+                token: token,
+                your_name: user_name,
+                user_id: user_id,
+                agent_id: agent_id,
+                session_id: session_id,
+                query: input
+            });
+
+            // 构建完整的 URL
+            const url = `http://localhost:8000/chat/api?${params.toString()}`;
     
-    // 接收消息
-    ws.onmessage = (event) => {
-        const li = document.createElement('li');
-        li.textContent = event.data;
+            // 发送 GET 请求
+            const response = await fetch(url);            
 
-        // 添加机器人消息
-        const botMessage = document.createElement('div');
-        botMessage.classList.add('chat-message', 'bot-message');
-        botMessage.textContent = li;
-        chatMessages.appendChild(botMessage);
+            // 检查响应状态
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+    
+            // 将响应转换为JSON格式
+            const data = await response.json();
 
-        // 清空输入框
-        document.getElementById('chatInput').value = '';
+            // 输出响应数据
+            console.log('Response data:', JSON.stringify(data));
 
-        // 滚动到底部
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    };
+            // 接收后端传回来的信息
+            user_id = data["user_id"];
+            session_id = data["session_id"];
+            agent_id = data["agent_id"];
 
-    // 断开连接
-    ws.onclose = () => {
-        console.log('Disconnected from server');
-    };
+            // 添加机器人消息
+            addBotMessage(data["response"]);
+        } catch (error) {
+            // 捕获并处理错误
+            console.error('Error:', error);
+        }
+    }
 
     // 发送消息
     function sendMessage() {
         const input = document.getElementById('chatInput').value.trim();
         if (input) {
-            const chatMessages = document.getElementById('chatMessages');
-    
-            // 添加用户消息
-            const userMessage = document.createElement('div');
-            userMessage.classList.add('chat-message', 'user-message');
-            userMessage.textContent = input;
-            chatMessages.appendChild(userMessage);
-    
+            // 添加用户消息到界面
+            addUserMessage(input);
             // 发送消息
-            ws.send(input);
+            sendHttpRequest(input);
         }
     }
 
-	document.getElementById('chatButton').addEventListener('click', sendMessage);
-	document.getElementById('chatInput').addEventListener('keypress', function(event) {
-    	if (event.key === 'Enter' && !event.shiftKey) {
-        	sendMessage();
-    	}
-	});
+    // 添加用户消息到界面
+    function addUserMessage(message) {
+        const chatMessages = document.getElementById('chatMessages');
+
+        // 添加用户消息
+        const userMessage = document.createElement('div');
+        userMessage.classList.add('chat-message', 'user-message');
+        userMessage.textContent = message;
+        chatMessages.appendChild(userMessage);
+
+        // 清空输入框
+        document.getElementById('chatInput').value = '';
+    }
+
+    // 添加机器人消息到界面
+    function addBotMessage(message) {
+        const chatMessages = document.getElementById('chatMessages');
+
+        // 添加机器人消息
+        const botMessage = document.createElement('pre');
+        botMessage.classList.add('chat-message', 'bot-message');
+        botMessage.textContent  = message;
+        chatMessages.appendChild(botMessage);
+
+        // 清空输入框
+        document.getElementById('chatInput').value = '';
+        // 滚动到底部
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
 
 </script>

@@ -1,5 +1,8 @@
 import os
 import qianfan
+import logging
+
+logger = logging.getLogger(__name__)
 
 def chat_api(your_name: str, query:str):
     API_KEY = "ZCcK674j19GL54HFtDRTuXqe"
@@ -7,6 +10,8 @@ def chat_api(your_name: str, query:str):
 
     os.environ["QIANFAN_AK"] = API_KEY
     os.environ["QIANFAN_SK"] = SECRET_KEY
+
+    logger.debug(f"your_name={your_name}, query={query}")
 
     llm = qianfan.ChatCompletion()
 
@@ -28,7 +33,7 @@ def chat_api(your_name: str, query:str):
         print(r["body"]["result"])
         llm_result_text = llm_result_text + r["body"]["result"]
 
-    print(f"response={llm_result_text}")
+    logger.debug(f"response={llm_result_text}")
 
     return llm_result_text
 

@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LLM 聊天机器人</title>
+    <title>Catherine's Chatbot</title>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js"></script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -66,6 +71,13 @@
 </head>
 <body>
     <div class="chat-container">
+        <select id="mySelect">
+            <option value="option1">选项一</option>
+            <option value="option2">选项二</option>
+            <option value="option3">选项三</option>
+        </select>
+    </div>
+    <div class="chat-container">
         <div class="chat-messages" id="chatMessages"></div>
         <input type="text" class="chat-input" id="chatInput" placeholder="输入你的消息...">
         <button class="chat-button" id="chatButton">发送</button>
@@ -74,13 +86,59 @@
 </html>
 
 <script>
+    var user_id = "";
+    var user_name = "Catherine";
+    var session_id = "";
+    var agent_id = "";
+    var token = "123456";
+
+    $(document).ready(function() {
+        $("#mySelect").autocomplete({
+            source: function(request, response) {
+                $.ajax({
+                    url: "get-chat-sessoins",  // 替换为你的获取选项的URL
+                    dataType: "json",  // 根据实际情况选择合适的类型
+                    data: { term: request.term, token: token },  // 将输入值发送到服务器以获取选项
+                    success: function(data) {
+                        response($.map(data, function(item) {
+                            return { value: item };  // 返回一个对象数组，每个对象包含一个value属性，该属性包含选项的值
+                        }));
+                    }
+                });
+            }
+        });
+
+        // 获取 select 元素
+        var selectElement = document.getElementById('mySelect');
+
+        // 添加事件监听器
+        selectElement.addEventListener('change', function() {
+            // 当选项发生变化时执行的代码
+            console.log('选项已发生变化:', selectElement.value);
+        });
+
+        // 事件监听: 为chatButton添加 click 点击事件监听器，监听点击事件，并调用sendMessage函数
+        document.getElementById('chatButton').addEventListener('click', sendMessage);
+
+        // 事件监听: 为chatInput添加 keypress 键盘事件监听器，监听回车键（不同时按shift键），并调用sendMessage函数
+        document.getElementById('chatInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                sendMessage();
+            }
+        });
+
+    });
+
     // 定义一个异步函数来发送HTTP请求
     async function sendHttpRequest(input) {
         try {
             // 定义参数
             const params = new URLSearchParams({
-                token: 'value1',
-                your_name: 'Catherine',
+                token: token,
+                your_name: user_name,
+                user_id: user_id,
+                agent_id: agent_id,
+                session_id: session_id,
                 query: input
             });
 
@@ -100,6 +158,11 @@
     
             // 输出响应数据
             console.log('Response data:', data);
+
+            // 接收后端传回来的信息
+            user_id = data["user_id"];
+            session_id = data["session_id"];
+            agent_id = data["agent_id"];
 
             // 添加机器人消息
             addBotMessage(data["response"]);
@@ -149,15 +212,5 @@
         // 滚动到底部
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
-
-    // 事件监听: 为chatButton添加 click 点击事件监听器，监听点击事件，并调用sendMessage函数
-	document.getElementById('chatButton').addEventListener('click', sendMessage);
-
-    // 事件监听: 为chatInput添加 keypress 键盘事件监听器，监听回车键（不同时按shift键），并调用sendMessage函数
-	document.getElementById('chatInput').addEventListener('keypress', function(event) {
-    	if (event.key === 'Enter' && !event.shiftKey) {
-        	sendMessage();
-    	}
-	});
 
 </script>

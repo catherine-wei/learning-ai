@@ -18,7 +18,41 @@ from django.contrib import admin
 from django.urls import path
 from django.urls import include
 
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+
+
+# schema_view = get_schema_view(
+#     openapi.Info(
+#         title="My API Title",
+#         default_version='v1',
+#         description="My API description",
+#     ),
+#     public=True,
+#     permission_classes=(permissions.AllowAny,),
+#     # 使用 'swagger' 或 'redoc' 作为UI选项
+#     renderer_classes=[
+#         # 这里通常不需要显式设置renderer_classes，因为get_schema_view会默认处理
+#         # 但如果你确实需要设置，确保不要包含 'redoc-old' 或其他不支持的选项
+#     ]
+# ).with_ui('swagger', cache_timeout=0)  # 使用Swagger UI
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="CatherineBot API",
+        default_version='v1',
+        description="Test description",
+        terms_of_service="https://www.google.com/policies/terms/",
+        contact=openapi.Contact(email="catherine@oddmeta.com"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
+
 urlpatterns = [
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('admin/', admin.site.urls),
     path("chat/", include("chat.urls")),
 ]
