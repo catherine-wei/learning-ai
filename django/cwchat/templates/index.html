@@ -25,14 +25,14 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 320px;
+            width: 640px;
         }
         .chat-container {
             background-color: #f5f5f5;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 320px;
+            width: 640px;
             height: 75vh; /* 高度设置为屏幕高度的 75% */
             overflow-y: auto; /* 当内容超出容器高度时，在右侧显示滚动条 */
             max-height: 100%; /* 确保高度不会超过视口高度（在某些情况下可能是多余的，但可以增加兼容性） */
@@ -48,6 +48,7 @@
         .user-message {
             background-color: #dcf8c6;
             align-self: flex-end;
+            text-align: right; /* 将文本对齐到右边 */
         }
         .bot-message {
             background-color: #e6f7ff;
@@ -146,6 +147,9 @@
                     // 清空现有的聊天记录
                     const chatMessages = document.getElementById('chatMessages');
                     chatMessages.innerHTML = "";
+
+                    // 使用reverse()方法颠倒数组的顺序,因为后端筛选的时候是按时间倒序排序的
+                    data.reverse();
 
                     // 将后端返回的聊天记录列表遍历，并逐一添加到聊天记录里
                     $.each(data, function(index, msg) {

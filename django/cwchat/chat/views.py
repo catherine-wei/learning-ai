@@ -1,6 +1,6 @@
-# from django.http import JsonResponse
 # from rest_framework import viewsets
 # from rest_framework.decorators import action
+from django.http import JsonResponse
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_200_OK
@@ -31,22 +31,6 @@ def index(request):
     context = {'sessions': sessions}
 
     return render(request, 'index.html', context)
-
-
-# class MessageModelViewSet(viewsets.ModelViewSet):
-#     """
-#     API endpoint that allows MyModel instances to be viewed or edited.
-#     """
-#     queryset = MessageModel.objects.all()
-#     serializer_class = MessageModelSerializer
- 
-#     @action(detail=True, methods=['post'])
-#     def custom_action(self, request, pk=None):
-#         """
-#         Custom action description.
-#         """
-#         # 你的自定义动作逻辑
-#         return Response({'status': 'custom action executed'})
 
 
 def chatapi(request):
@@ -97,7 +81,7 @@ def chatapi(request):
     msg.save()
 
     # 返回JSON响应
-    return Response(response_data)
+    return JsonResponse(response_data)
 
 def validate_token(token: str, user_id: str):
     '''
@@ -129,23 +113,24 @@ def session_msgs(request):
     session_id = request.query_params.get('session_id')
     user_id = request.query_params.get('user_id')
     latest = request.query_params.get('latest')
-    if latest == "":
-        latest = 5
+    if latest == "" or latest is None:
+        latest = 6
 
     # 验证token和用户
     valid, user_info = validate_token(token=token, user_id=user_id)
     if not valid:
         return Response({'error': 'Invalid token or user not found'}, status=HTTP_400_BAD_REQUEST)
     user_id = user_info.get('user_id')
-    print(f"token={token}, user_id={user_id}, user_info={user_info}")
 
     # 验证这个session是不是属于这个user的
     sessions = SessionModel.objects.filter(user_id=user_id, session_id=session_id)
     if not sessions.exists():  # 使用exists()方法更高效，因为它在找到第一个匹配项时就会停止查询
         return Response({'error': 'Invalid session'}, status=HTTP_400_BAD_REQUEST)
 
-    # 筛选指定用户和session的消息列表
-    msgs = MessageModel.objects.filter(session_id=session_id).order_by("timestamp")[:latest]
+    print(f"token={token}, user_id={user_id}, user_info={user_info}, latest={latest}, session_id={session_id}")
+
+    # 筛选指定用户和session的消息列表，字段名前面加一个 - 代表倒序排
+    msgs = MessageModel.objects.filter(session_id=session_id).order_by("-timestamp")[:latest]
  
     if msgs.exists():  # 使用exists()方法更高效，因为它在找到第一个匹配项时就会停止查询
         response_data = [{'content': obj.content, 'sender_type': obj.sender_type, 'timestamp': obj.timestamp} for obj in msgs]
