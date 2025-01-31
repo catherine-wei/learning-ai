@@ -3,13 +3,6 @@ from django.urls import re_path as url
 
 from .views import index, chatapi, chat_sessions, session_msgs
 
-# from rest_framework.routers import DefaultRouter
-# from .views import MessageModelViewSet
-
-# # 创建路由器并注册视图集
-# router = DefaultRouter()
-# router.register(r'messages', MessageModelViewSet)
-
 urlpatterns = [
     path('index.html', index, name='chat/index'),
     url(r'^$', index, name='chat/'),

@@ -22,21 +22,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
-
-# schema_view = get_schema_view(
-#     openapi.Info(
-#         title="My API Title",
-#         default_version='v1',
-#         description="My API description",
-#     ),
-#     public=True,
-#     permission_classes=(permissions.AllowAny,),
-#     # 使用 'swagger' 或 'redoc' 作为UI选项
-#     renderer_classes=[
-#         # 这里通常不需要显式设置renderer_classes，因为get_schema_view会默认处理
-#         # 但如果你确实需要设置，确保不要包含 'redoc-old' 或其他不支持的选项
-#     ]
-# ).with_ui('swagger', cache_timeout=0)  # 使用Swagger UI
+from chat.views_3d import test3d, test3vrm,test_3vrm
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -55,4 +41,10 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('admin/', admin.site.urls),
     path("chat/", include("chat.urls")),
+    path('test3d.html', test3d, name='test3d'),
+    path('test3vrm.html', test3vrm, name='test3vrm'),
+    path('test-3vrm.html', test_3vrm, name='test_3vrm'),
+    path("threevrm/", include("chat.urls_three")),
+    
 ]
+
