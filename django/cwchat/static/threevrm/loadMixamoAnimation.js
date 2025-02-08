@@ -31,7 +31,6 @@ export function loadMixamoAnimation( url, vrm ) {
 		const hipsPositionScale = vrmHipsHeight / motionHipsHeight;
 
 		clip.tracks.forEach( ( track ) => {
-
 			// Convert each tracks for VRM use, and push to `tracks`
 			const trackSplitted = track.name.split( '.' );
 			const mixamoRigName = trackSplitted[ 0 ];
@@ -40,7 +39,6 @@ export function loadMixamoAnimation( url, vrm ) {
 			const mixamoRigNode = asset.getObjectByName( mixamoRigName );
 
 			if ( vrmNodeName != null ) {
-
 				const propertyName = trackSplitted[ 1 ];
 
 				// Store rotations of rest-pose.
@@ -51,11 +49,8 @@ export function loadMixamoAnimation( url, vrm ) {
 
 					// Retarget rotation of mixamoRig to NormalizedBone.
 					for ( let i = 0; i < track.values.length; i += 4 ) {
-
 						const flatQuaternion = track.values.slice( i, i + 4 );
-
 						_quatA.fromArray( flatQuaternion );
-
 						// 親のレスト時ワールド回転 * トラックの回転 * レスト時ワールド回転の逆
 						_quatA
 							.premultiply( parentRestWorldRotation )
@@ -64,11 +59,8 @@ export function loadMixamoAnimation( url, vrm ) {
 						_quatA.toArray( flatQuaternion );
 
 						flatQuaternion.forEach( ( v, index ) => {
-
 							track.values[ index + i ] = v;
-
 						} );
-
 					}
 
 					tracks.push(
