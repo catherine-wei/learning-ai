@@ -23,7 +23,7 @@
 
         /* 直播区域样式 */
         .live-area {
-            flex: 3;
+            flex: 65;
             background-color: #000;
             display: flex;
             justify-content: center;
@@ -43,7 +43,7 @@
 
         /* 聊天区域样式 */
         .chat-area {
-            flex: 1;
+            flex: 33;
             display: flex;
             flex-direction: column;
             border-left: 1px solid #ccc;
@@ -126,6 +126,7 @@
 
         /* 切换按钮样式 */
         .toggle-button {
+            flex: 1;
             background-color: #00a1d6;
             color: white;
             border: none;
@@ -175,14 +176,15 @@
                 "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/",
                 "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3/lib/three-vrm.module.js",
                 "@loadMixamoAnimation": "/threevrm/loadMixamoAnimation.js",
-                "@ThreeVRMViewer": "/threevrm/main.js"
+                "@ThreeVRMViewer": "/threevrm/main.js",
+                "@expressionConsts": "/threevrm/emoteConstants.js"
             }
         }
     </script>
 
     <!-- 直播区域 -->
     <div class="live-area" id="liveArea">
-        <div class="live-image">
+        <div class="live-image" id="liveContainer">
             直播画面
         </div>
     </div>
@@ -205,6 +207,26 @@
                 <option value="option2">选项二</option>
                 <option value="option3">选项三</option>
             </select>
+            <select id="myActions">
+                <option value="angry-female-standing-angrily">angry-female-standing-angrily</option>
+                <option value="clapping-male-clap-while-standing">clapping-male-clap-while-standing</option>
+                <option value="disappointed-male-awe-shucks">disappointed-male-awe-shucks</option>
+                <option value="excited-female-super-excited">excited-female-super-excited</option>
+                <option value="talking-female-asking-a-question">talking-female-asking-a-question</option>
+                <option value="greeting-female-standing">greeting-female-standing</option>
+                <option value="greeting-male-quick-formal-bow">greeting-male-quick-formal-bow</option>
+                <option value="greeting-male-salute">greeting-male-salute</option>
+                <option value="happy-female-standing-happily">happy-female-standing-happily</option>
+                <option value="talking-female-general-conversation">talking-female-general-conversation</option>
+            </select>
+            <select id="myEmotions">
+                <option value="neutral">默认</option>
+                <option value="happy">开心</option>
+                <option value="angry">生气</option>
+                <option value="sad">悲伤</option>
+                <option value="relaxed">放松</option>
+                <option value="surprised">惊讶</option>
+            </select>
             <!-- 聊天输入框区域 -->
             <div class="chat-input">
                 <input type="text" id="chatInput" placeholder="输入聊天内容">
@@ -221,6 +243,8 @@
 
 <script type="module">
     import { ThreeVRMViewer } from '@ThreeVRMViewer';
+    import * as EMOTE from '@expressionConsts';
+
     // 使用示例
     const viewer = new ThreeVRMViewer();
     viewer.start();
@@ -234,7 +258,8 @@
     $(document).ready(function() {
         // 获取 select 元素
         var selectElement = document.getElementById('mySelect');
-
+        var selectAcitons = document.getElementById('myActions');
+        var selectEmotions= document.getElementById('myEmotions');
         // 从后端获取 chat session options
         $.ajax({
                 url: '{% url "chatsessions" %}',  // 使用Django模板标签生成URL
@@ -284,12 +309,25 @@
                         if (msg.sender_type == 0) {
                             addUserMessage(msg.content);
                         } else {
-                            addBotMessage(msg.content);
+                            addBotMessage(msg.content, 1);
                         }
                     });
                 }, 
 
             });
+        });
+
+        selectEmotions.addEventListener('change', function() {
+            // 当选项发生变化时执行的代码
+            console.log('手动播放emotion:', selectEmotions.value);
+            viewer.playEmotion(selectEmotions.value, 1);
+        });
+
+        selectAcitons.addEventListener('change', function() {
+            // 当选项发生变化时执行的代码
+            console.log('手动播放action:', selectAcitons.value);
+            var currentAnimationUrl = "/static/fbx/"+ selectAcitons.value +".fbx";
+            viewer.playAction(currentAnimationUrl, 1);
         });
 
         // 事件监听: 为chatButton添加 click 点击事件监听器，监听点击事件，并调用sendMessage函数
@@ -341,7 +379,7 @@
             agent_id = data["agent_id"];
 
             // 添加机器人消息
-            addBotMessage(data["response"]);
+            addBotMessage(data["response"], 0);
         } catch (error) {
             // 捕获并处理错误
             console.error('Error:', error);
@@ -374,7 +412,7 @@
     }
 
     // 添加机器人消息到界面
-    function addBotMessage(message) {
+    function addBotMessage(message, history) {
         const chatHistory = document.getElementById('chatHistory');
 
         // 添加机器人消息
@@ -383,7 +421,8 @@
         botMessage.textContent  = message;
         chatHistory.appendChild(botMessage);
 
-        speak(message);
+        if (history != 1)
+            speak(message);
 
         // 清空输入框
         document.getElementById('chatInput').value = '';

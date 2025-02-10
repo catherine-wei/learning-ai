@@ -3,67 +3,97 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import { loadMixamoAnimation } from './loadMixamoAnimation.js';
-import GUI from 'three/addons/libs/lil-gui.module.min.js';
+import { LipSync } from './lipSync.js';
+import { EmoteController } from "./emoteController.js";
 
 export class ThreeVRMViewer {
 	scene = null;
 
     constructor() {
-        // renderer
-        this.renderer = new THREE.WebGLRenderer();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(window.devicePixelRatio);
-
-        // document.body.appendChild(this.renderer.domElement);
-        const liveArea = document.getElementById('liveArea');
-        liveArea.innerHTML = "";
-		liveArea.appendChild(this.renderer.domElement);
-
-        // camera
-        this.camera = new THREE.PerspectiveCamera(30.0, window.innerWidth / window.innerHeight, 0.1, 20.0);
-        this.camera.position.set(0.0, 1.0, 5.0);
-
-        // camera controls
-        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        this.controls.screenSpacePanning = true;
-        this.controls.target.set(0.0, 1.0, 0.0);
-        this.controls.update();
-
-        // scene
-        this.scene = new THREE.Scene();
-
-        // light
-        this.light = new THREE.DirectionalLight(0xffffff, Math.PI);
-        this.light.position.set(1.0, 1.0, 1.0).normalize();
-        this.scene.add(this.light);
-
         this.defaultModelUrl = '/static/models/xiaomei2.vrm';
 		this.defaultBackground = '/static/background/nex3.png';
+		this.defaultBackground = '/static/background/bg1.jpg';
+        this.defaultAnimationUrl = "/static/fbx/idle-female.fbx";
+        this.currentAnimationUrl = "/static/fbx/idle-female.fbx";
+
+        // document.body.appendChild(this._renderer.domElement);
+        const liveArea = document.getElementById('liveContainer');
+        liveArea.innerHTML = "";
+        const rect = liveArea.getBoundingClientRect();
+        const width = rect.width;
+        const height =  window.innerWidth/window.innerHeight * width;
+        console.log("liveArea:" + width + "-" + rect.height + ", height: " + height);
+        
+        // renderer
+        this._renderer = new THREE.WebGLRenderer();
+        this._renderer.setSize(width, height);
+        this._renderer.setPixelRatio(window.devicePixelRatio);
+        
+        liveArea.appendChild(this._renderer.domElement);
+
+        // camera
+        this._camera = new THREE.PerspectiveCamera(30.0, width / height, 0.1, 20.0);
+        this._camera.position.set(0.0, 1.0, 5.0);
+
+        // camera controls
+        this._controls = new OrbitControls(this._camera, this._renderer.domElement);
+        this._controls.screenSpacePanning = true;
+        this._controls.target.set(0.0, 1.0, 0.0);
+        this._controls.update();
+
+        // scene
+        this._scene = new THREE.Scene();
+
+        // light
+        this._light = new THREE.DirectionalLight(0xffffff, Math.PI);
+        this._light.position.set(1.0, 1.0, 1.0).normalize();
+        this._scene.add(this._light);
 
         // gltf and vrm
         this.currentVrm = undefined;
-        this.currentAnimationUrl = "/static/fbx/idle-female.fbx";
         this.currentMixer = undefined;
 
         this.helperRoot = new THREE.Group();
         this.helperRoot.renderOrder = 10000;
-        // this.scene.add( this.helperRoot );
+        // this._scene.add( this.helperRoot );
 
         this.params = { timeScale: 1.0, };
 
-        // // gui
-        // this.gui = new GUI();
-        // this.gui.add(this.params, 'timeScale', 0.0, 2.0, 0.001).onChange((value) => {
-        //     if (this.currentMixer) {
-        //         this.currentMixer.timeScale = value;
-        //     }
-        // });
-
         // clock
-        this.clock = new THREE.Clock();
+        this._clock = new THREE.Clock();
 
         // add dnd event listeners
         this.addDragAndDropListeners();
+
+        // emotion and lipSync
+        this._lookAtTargetParent = this._camera;
+        this._lipSync = new LipSync(new AudioContext());
+
+        // auto adjust when window resized
+        window.addEventListener("resize", () => {
+            this.resize();
+          });
+    }
+
+    /**
+     * 参照canvas的父元素调整大小
+     */
+    resize() {
+        if (!this._renderer) return;
+
+        const parentElement = this._renderer.domElement.parentElement;
+        if (!parentElement) return;
+
+        this._renderer.setPixelRatio(window.devicePixelRatio);
+        this._renderer.setSize(
+            parentElement.clientWidth,
+            parentElement.clientHeight
+        );
+
+        if (!this._camera) return;
+        this._camera.aspect =
+          parentElement.clientWidth / parentElement.clientHeight;
+        this._camera.updateProjectionMatrix();
     }
 
     loadVRM(modelUrl) {
@@ -86,12 +116,12 @@ export class ThreeVRMViewer {
                 VRMUtils.combineMorphs(vrm);
 
                 if (this.currentVrm) {
-                    this.scene.remove(this.currentVrm.scene);
+                    this._scene.remove(this.currentVrm.scene);
                     VRMUtils.deepDispose(this.currentVrm.scene);
                 }
 
                 this.currentVrm = vrm;
-                this.scene.add(vrm.scene);
+                this._scene.add(vrm.scene);
 
                 vrm.scene.traverse((obj) => {
                     obj.frustumCulled = true;
@@ -102,7 +132,9 @@ export class ThreeVRMViewer {
                 }
 
                 VRMUtils.rotateVRM0(vrm);
-
+                this.mixer = new THREE.AnimationMixer(vrm.scene);
+                this.emoteController = new EmoteController(vrm, this._lookAtTargetParent);
+            
                 console.log(vrm);
             },
             (progress) => console.log('Loading model...', 100.0 * (progress.loaded / progress.total), '%'),
@@ -131,16 +163,16 @@ export class ThreeVRMViewer {
 		const loader = new THREE.TextureLoader();
 		loader.load(url, (texture) => {
 			// 显式设置背景颜色为黑色
-			// this.scene.background = new THREE.Color(0x000000);
+			// this._scene.background = new THREE.Color(0x000000);
 
 			// 设置场景的背景为加载的纹理
-			this.scene.background = texture;
+			this._scene.background = texture;
 		});
 	}
 
     animate() {
         requestAnimationFrame(() => this.animate());
-        const deltaTime = this.clock.getDelta();
+        const deltaTime = this._clock.getDelta();
         if (this.currentMixer) {
             this.currentMixer.update(deltaTime);
         }
@@ -149,7 +181,7 @@ export class ThreeVRMViewer {
             this.currentVrm.update(deltaTime);
         }
 
-        this.renderer.render(this.scene, this.camera);
+        this._renderer.render(this._scene, this._camera);
     }
 
     addDragAndDropListeners() {
@@ -175,6 +207,73 @@ export class ThreeVRMViewer {
                 this.loadVRM(url);
             }
         });
+    }
+
+    /**
+     * 播放声音，进行唇部同步
+     */
+    async speak(buffer, screenplay) {
+        this.emoteController?.playEmotion(screenplay.expression);
+        await new Promise((resolve) => {
+            this._lipSync?.playFromArrayBuffer(buffer, () => {
+            resolve(true);
+            this.emoteController?.playEmotion("neutral");
+            });
+        });
+    }
+
+    async playEmotion(emotionType) {
+        this.emoteController?.playEmotion(emotionType);
+    }
+
+    async playAction(fbxUrl, once) {
+        this.currentAnimationUrl = fbxUrl;
+
+        if (this.currentVrm) {
+            this.currentVrm.humanoid.resetNormalizedPose();
+            this.currentMixer = new THREE.AnimationMixer(this.currentVrm.scene);
+    
+            loadMixamoAnimation(fbxUrl, this.currentVrm).then((clip) => {
+                if (this.currentMixer) {
+                    // 动画只播放一次，或者循环播放
+                    if (once) {
+                        // 创建动画动作
+                        const action = this.currentMixer.clipAction(clip);
+        
+                        // 设置动画只播放一次
+                        action.setLoop(THREE.LoopOnce, 1); // THREE.LoopOnce 表示只播放一次
+                        action.clampWhenFinished = true; // 播放结束后停留在最后一帧
+        
+                        // 播放动画
+                        action.play();
+        
+                        // 设置时间缩放
+                        this.currentMixer.timeScale = this.params.timeScale;
+        
+                        // 监听动画结束事件
+                        this.currentMixer.addEventListener('finished', (e) => {
+                            console.log('Animation finished, restore to default animation');
+                            // 一次性的动作完成后，恢复到默认的动作
+                            this.loadFBX(this.defaultAnimationUrl);
+                        });
+                    } else {
+                        this.currentMixer.clipAction(clip).play();
+                        this.currentMixer.timeScale = this.params.timeScale;
+                    }
+                }
+            });
+        }
+    }
+
+    update(delta) {
+        if (this._lipSync) {
+          const { volume } = this._lipSync.update();
+          this.emoteController?.lipSync("aa", volume);
+        }
+    
+        this.emoteController?.update(delta);
+        this.mixer?.update(delta);
+        this.vrm?.update(delta);
     }
 
     start() {
