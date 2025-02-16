@@ -2,6 +2,7 @@ from django.urls import path, include
 from django.urls import re_path as url
 
 from .views import index, chatapi, chat_sessions, session_msgs
+from .views_3d import CharacterAction, CharacterEmotion
 
 urlpatterns = [
     path('index.html', index, name='chat/index'),
@@ -9,6 +10,9 @@ urlpatterns = [
     path('api', chatapi, name='chatapi'),
     path('chatsessions', chat_sessions, name='chatsessions'),
     path('session_msgs', session_msgs, name='session_msgs'),
+
+    path('actions', CharacterAction.character_action_list, name='character_action_list'),
+    path('emotions', CharacterEmotion.character_emotion_list, name='character_emotion_list'),
 
     # path('', include(router.urls)),
 

@@ -50,14 +50,14 @@ export class ThreeVRMViewer {
         this._scene.add(this._light);
 
         // gltf and vrm
-        this.currentVrm = undefined;
-        this.currentMixer = undefined;
+        this._currentVrm = undefined;
+        this._currentMixer = undefined;
 
         this.helperRoot = new THREE.Group();
         this.helperRoot.renderOrder = 10000;
         // this._scene.add( this.helperRoot );
 
-        this.params = { timeScale: 1.0, };
+        this._params = { timeScale: 1.0, };
 
         // clock
         this._clock = new THREE.Clock();
@@ -115,12 +115,12 @@ export class ThreeVRMViewer {
                 VRMUtils.combineSkeletons(gltf.scene);
                 VRMUtils.combineMorphs(vrm);
 
-                if (this.currentVrm) {
-                    this._scene.remove(this.currentVrm.scene);
-                    VRMUtils.deepDispose(this.currentVrm.scene);
+                if (this._currentVrm) {
+                    this._scene.remove(this._currentVrm.scene);
+                    VRMUtils.deepDispose(this._currentVrm.scene);
                 }
 
-                this.currentVrm = vrm;
+                this._currentVrm = vrm;
                 this._scene.add(vrm.scene);
 
                 vrm.scene.traverse((obj) => {
@@ -132,8 +132,7 @@ export class ThreeVRMViewer {
                 }
 
                 VRMUtils.rotateVRM0(vrm);
-                this.mixer = new THREE.AnimationMixer(vrm.scene);
-                this.emoteController = new EmoteController(vrm, this._lookAtTargetParent);
+                this._emoteController = new EmoteController(vrm, this._lookAtTargetParent);
             
                 console.log(vrm);
             },
@@ -145,14 +144,14 @@ export class ThreeVRMViewer {
     loadFBX(animationUrl) {
         this.currentAnimationUrl = animationUrl;
 
-        if (this.currentVrm) {
-            this.currentVrm.humanoid.resetNormalizedPose();
-            this.currentMixer = new THREE.AnimationMixer(this.currentVrm.scene);
+        if (this._currentVrm) {
+            this._currentVrm.humanoid.resetNormalizedPose();
+            this._currentMixer = new THREE.AnimationMixer(this._currentVrm.scene);
 
-            loadMixamoAnimation(animationUrl, this.currentVrm).then((clip) => {
-                if (this.currentMixer) {
-                    this.currentMixer.clipAction(clip).play();
-                    this.currentMixer.timeScale = this.params.timeScale;
+            loadMixamoAnimation(animationUrl, this._currentVrm).then((clip) => {
+                if (this._currentMixer) {
+                    this._currentMixer.clipAction(clip).play();
+                    this._currentMixer.timeScale = this._params.timeScale;
                 }
             });
         }
@@ -173,12 +172,12 @@ export class ThreeVRMViewer {
     animate() {
         requestAnimationFrame(() => this.animate());
         const deltaTime = this._clock.getDelta();
-        if (this.currentMixer) {
-            this.currentMixer.update(deltaTime);
+        if (this._currentMixer) {
+            this._currentMixer.update(deltaTime);
         }
 
-        if (this.currentVrm) {
-            this.currentVrm.update(deltaTime);
+        if (this._currentVrm) {
+            this._currentVrm.update(deltaTime);
         }
 
         this._renderer.render(this._scene, this._camera);
@@ -213,32 +212,32 @@ export class ThreeVRMViewer {
      * 播放声音，进行唇部同步
      */
     async speak(buffer, screenplay) {
-        this.emoteController?.playEmotion(screenplay.expression);
+        this._emoteController?.playEmotion(screenplay.expression);
         await new Promise((resolve) => {
             this._lipSync?.playFromArrayBuffer(buffer, () => {
-            resolve(true);
-            this.emoteController?.playEmotion("neutral");
+                resolve(true);
+                this._emoteController?.playEmotion("neutral");
             });
         });
     }
 
     async playEmotion(emotionType) {
-        this.emoteController?.playEmotion(emotionType);
+        this._emoteController?.playEmotion(emotionType);
     }
 
     async playAction(fbxUrl, once) {
         this.currentAnimationUrl = fbxUrl;
 
-        if (this.currentVrm) {
-            this.currentVrm.humanoid.resetNormalizedPose();
-            this.currentMixer = new THREE.AnimationMixer(this.currentVrm.scene);
+        if (this._currentVrm) {
+            this._currentVrm.humanoid.resetNormalizedPose();
+            this._currentMixer = new THREE.AnimationMixer(this._currentVrm.scene);
     
-            loadMixamoAnimation(fbxUrl, this.currentVrm).then((clip) => {
-                if (this.currentMixer) {
+            loadMixamoAnimation(fbxUrl, this._currentVrm).then((clip) => {
+                if (this._currentMixer) {
                     // 动画只播放一次，或者循环播放
                     if (once) {
                         // 创建动画动作
-                        const action = this.currentMixer.clipAction(clip);
+                        const action = this._currentMixer.clipAction(clip);
         
                         // 设置动画只播放一次
                         action.setLoop(THREE.LoopOnce, 1); // THREE.LoopOnce 表示只播放一次
@@ -248,17 +247,17 @@ export class ThreeVRMViewer {
                         action.play();
         
                         // 设置时间缩放
-                        this.currentMixer.timeScale = this.params.timeScale;
+                        this._currentMixer.timeScale = this._params.timeScale;
         
                         // 监听动画结束事件
-                        this.currentMixer.addEventListener('finished', (e) => {
+                        this._currentMixer.addEventListener('finished', (e) => {
                             console.log('Animation finished, restore to default animation');
                             // 一次性的动作完成后，恢复到默认的动作
                             this.loadFBX(this.defaultAnimationUrl);
                         });
                     } else {
-                        this.currentMixer.clipAction(clip).play();
-                        this.currentMixer.timeScale = this.params.timeScale;
+                        this._currentMixer.clipAction(clip).play();
+                        this._currentMixer.timeScale = this._params.timeScale;
                     }
                 }
             });
@@ -268,12 +267,12 @@ export class ThreeVRMViewer {
     update(delta) {
         if (this._lipSync) {
           const { volume } = this._lipSync.update();
-          this.emoteController?.lipSync("aa", volume);
+          this._emoteController?.lipSync("aa", volume);
         }
     
-        this.emoteController?.update(delta);
-        this.mixer?.update(delta);
-        this.vrm?.update(delta);
+        this._emoteController?.update(delta);
+        this._currentMixer?.update(delta);
+        this._currentVrm?.update(delta);
     }
 
     start() {

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talk to your AI Companion</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .headphone-notice {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+
+        .tab-wrapper {
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .tab-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            background-color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        .tab.active {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .tab:hover {
+            background-color: #d0d0d0;
+        }
+
+        .chat-container {
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .chat-message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .chat-message.user {
+            justify-content: flex-end;
+        }
+        .chat-message .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #ccc;
+            flex-shrink: 0;
+        }
+        .chat-message.user .avatar {
+            background-color: #007bff;
+        }
+        .chat-message .message-content {
+            max-width: 70%;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .chat-message.user .message-content {
+            background-color: #007bff;
+            color: #fff;
+        }
+        .chat-message.character .message-content {
+            background-color: #fff;
+            color: #000;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+        .input-container input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .input-container button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .input-container button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Tab 分类 -->
+        <div class="tab-wrapper">
+            <div class="tab-container">
+                <div class="tab active" data-category="All">All</div>
+                <div class="tab" data-category="Community">Community</div>
+                <div class="tab" data-category="MyCharacters">My Characters</div>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <!-- 角色消息 -->
+            <div class="chat-message character">
+                <div class="avatar">
+                    <img src="https://via.placeholder.com/40" alt="Steve Jobs" style="width: 100%; height: 100%; border-radius: 50%;">
+                </div>
+                <div class="message-content">
+                    Hi, my friend, what brings you here today?
+                </div>
+            </div>
+            <!-- 用户消息 -->
+            <div class="chat-message user">
+                <div class="message-content">
+                    你能说中文吗
+                </div>
+                <div class="avatar">
+                    <img src="https://via.placeholder.com/40" alt="User" style="width: 100%; height: 100%; border-radius: 50%;">
+                </div>
+            </div>
+            <!-- 角色消息 -->
+            <div class="chat-message character">
+                <div class="avatar">
+                    <img src="https://via.placeholder.com/40" alt="Steve Jobs" style="width: 100%; height: 100%; border-radius: 50%;">
+                </div>
+                <div class="message-content">
+                    我很抱歉，我不会说中文。但是，我相信技术的力量可以帮助我们打破语言障碍。您有其他问题需要帮助吗？
+                </div>
+            </div>
+            <!-- 用户消息 -->
+            <div class="chat-message user">
+                <div class="message-content">
+                    苹果手机推出几代了
+                </div>
+                <div class="avatar">
+                    <img src="https://via.placeholder.com/40" alt="User" style="width: 100%; height: 100%; border-radius: 50%;">
+                </div>
+            </div>
+            <!-- 角色消息 -->
+            <div class="chat-message character">
+                <div class="avatar">
+                    <img src="https://via.placeholder.com/40" alt="Steve Jobs" style="width: 100%; height: 100%; border-radius: 50%;">
+                </div>
+                <div class="message-content">
+                    哇，苹果手机已经推出了很多代了！从第一代iPhone到现在的iPhone 14系列，我们一直在不断创新和改进。但是，我需要更多的信息来回答您的问题。您是想知道具体有多少代吗？还是有其他相关的问题？请提供更多细节，我会尽力帮助您。
+                </div>
+            </div>
+        </div>
+        <div class="input-container">
+            <input type="text" placeholder="Type your message">
+            <button>Send Message</button>
+        </div>
+    </div>
+</body>
+</html>

@@ -32,6 +32,19 @@ def index(request):
 
     return render(request, 'index.html', context)
 
+def talk_view(request):
+    token = request.GET.get("token")
+    user_info = get_userinfo_by_token(token=token)
+    user_id = user_info.get('user_id')  # 假设get_userinfo_by_token返回一个包含user_id的字典
+    print(f"userid={user_id}")
+
+    # 查询SessionModel里属于这个user_id的记录列表
+    sessions = SessionModel.objects.filter(user_id=user_id)
+
+    context = {'sessions': sessions}
+
+    return render(request, 'talk.html', context)
+
 
 def chatapi(request):
     token = request.GET.get("token")

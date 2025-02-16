@@ -22,7 +22,8 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
-from chat.views_3d import test3d, test3vrm,test_3vrm
+from chat.views_3d import CharacterView
+from chat.views import talk_view
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -41,9 +42,11 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('admin/', admin.site.urls),
     path("chat/", include("chat.urls")),
-    path('test3d.html', test3d, name='test3d'),
-    path('test3vrm.html', test3vrm, name='test3vrm'),
-    path('test-3vrm.html', test_3vrm, name='test_3vrm'),
+    path('', CharacterView.default, name='default'),
+    path('talk.html', talk_view, name='talk_view'),
+    path('test3d.html', CharacterView.test3d, name='test3d'),
+    path('test3vrm.html', CharacterView.test3vrm, name='test3vrm'),
+    path('test-3vrm.html', CharacterView.test_3vrm, name='test_3vrm'),
     path("threevrm/", include("chat.urls_three")),
     
 ]
