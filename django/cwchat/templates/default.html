@@ -28,13 +28,48 @@
             background-color: #333;
             color: white;
             width: 100%;
+            max-width: 800px;
             padding: 20px 0;
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+
+            padding: 20px;
+            margin: 20px 0;
+
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+            display: flex;
         }
 
         .logo {
             font-size: 24px;
             font-weight: bold;
+        }
+
+        .logo a{
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .header-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .header-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .header-links a:hover {
+            color: #007bff;
         }
 
         /* 容器样式 */
@@ -115,8 +150,8 @@
         }
 
         .character-item img {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             margin-bottom: 10px;
             transition: transform 0.3s ease;
@@ -173,7 +208,18 @@
 <body>
     <!-- Header 部分 -->
     <header>
-        <div class="logo">Oddmeta AI</div>
+        <div class="logo"><a href="/">Oddmeta AI</a></div>
+        <div class="header-links">
+            {% if user.is_authenticated %}
+            <a href="{% url 'admin/logout' %}?user_id={{user.id}}">登出</a>
+            {% else %}
+            <a href="{% url 'admin/login' %}">登录</a>
+            {% endif %}
+
+            {% if user.is_staff %}
+            <a href="/admin">控制台</a>
+            {% endif %}
+        </div>
     </header>
 
     <div class="container">
@@ -191,93 +237,37 @@
 
         <!-- 角色列表 -->
         <div class="character-grid">
+
             <!-- 第一排 -->
+            <!--
             <div class="character-item" data-category="Community">
                 <a href="talk.html?roleid=1">
-                    <img src="https://pics6.baidu.com/feed/c8177f3e6709c93d9deda2f26ee4bfd3d0005485.jpeg@f_auto?token=f742eae7f392b41a11cd67cb2e7b4c6d"
-                        alt="Raiden Shogun" />
+                    <img src="/media/avatar/avatar1.png" alt="JOE" />
+                    JOE
+                </a>
+            </div>
+            <div class="character-item" data-category="Community">
+                <a href="talk.html?roleid=1">
+                    <img src="/media/avatar/nobody.png" alt="Raiden Shogun" />
                     BRUCE WAYNE
                 </a>
             </div>
             <div class="character-item" data-category="Community">
                 <a href="talk.html?roleid=1">
-                    <img src="https://pics6.baidu.com/feed/c8177f3e6709c93d9deda2f26ee4bfd3d0005485.jpeg@f_auto?token=f742eae7f392b41a11cd67cb2e7b4c6d"
-                        alt="Raiden Shogun">
+                    <img src="/media/avatar/avatar11.png" alt="Raiden Shogun">
                     LOKI
                 </a>
             </div>
-            <div class="character-item" data-category="Community">
-                <a href="talk.html?roleid=1">
-                    <img src="https://pics6.baidu.com/feed/c8177f3e6709c93d9deda2f26ee4bfd3d0005485.jpeg@f_auto?token=f742eae7f392b41a11cd67cb2e7b4c6d"
-                        alt="Raiden Shogun">
-                    STEVE JOBS
-                </a>
-            </div>
-            <div class="character-item" data-category="MyCharacters">
-                <a href="talk.html?roleid=1">
-                    <img src="https://pics6.baidu.com/feed/c8177f3e6709c93d9deda2f26ee4bfd3d0005485.jpeg@f_auto?token=f742eae7f392b41a11cd67cb2e7b4c6d"
-                        alt="Raiden Shogun">
-                    ELON MUSK
-                </a>
-            </div>
-            <div class="character-item" data-category="MyCharacters">
-                <a href="talk.html?roleid=1">
-                    <img src="https://pics6.baidu.com/feed/c8177f3e6709c93d9deda2f26ee4bfd3d0005485.jpeg@f_auto?token=f742eae7f392b41a11cd67cb2e7b4c6d"
-                        alt="Raiden Shogun">
-                    RAIDEN SHOGUN
-                </a>
-            </div>
-            <div class="character-item" data-category="MyCharacters">
-                <a href="talk.html?roleid=1">
-                    <img src="https://pics6.baidu.com/feed/c8177f3e6709c93d9deda2f26ee4bfd3d0005485.jpeg@f_auto?token=f742eae7f392b41a11cd67cb2e7b4c6d"
-                        alt="Raiden Shogun">
-                    CHARACTER 6
-                </a>
-            </div>
+            -->
 
-            <!-- 第二排 -->
-            <div class="character-item" data-category="MyCharacters">
-                <a href="talk.html?roleid=1">
-                    <img src="https://pics6.baidu.com/feed/c8177f3e6709c93d9deda2f26ee4bfd3d0005485.jpeg@f_auto?token=f742eae7f392b41a11cd67cb2e7b4c6d"
-                        alt="Raiden Shogun">
-                    CHARACTER 7
+            {% for role in character_role_list %}
+            <div class="character-item" data-category="{% if role.role_id == user.user_id %}MyCharacters{% else %}Community{% endif %}">
+                <a href="talk.html?roleid={{ role.role_id }}">
+                    <img src="{{ role.role_avatar }}" alt="{{ role.role_name }}" />
+                    {{ role.role_name }}
                 </a>
             </div>
-            <div class="character-item" data-category="MyCharacters">
-                <a href="talk.html?roleid=1">
-                    <img src="https://pics6.baidu.com/feed/c8177f3e6709c93d9deda2f26ee4bfd3d0005485.jpeg@f_auto?token=f742eae7f392b41a11cd67cb2e7b4c6d"
-                        alt="Raiden Shogun">
-                    CHARACTER 8
-                </a>
-            </div>
-            <div class="character-item" data-category="Community">
-                <a href="talk.html?roleid=1">
-                    <img src="https://pics6.baidu.com/feed/c8177f3e6709c93d9deda2f26ee4bfd3d0005485.jpeg@f_auto?token=f742eae7f392b41a11cd67cb2e7b4c6d"
-                        alt="Raiden Shogun">
-                    CHARACTER 9
-                </a>
-            </div>
-            <div class="character-item" data-category="Community">
-                <a href="talk.html?roleid=1">
-                    <img src="https://pics6.baidu.com/feed/c8177f3e6709c93d9deda2f26ee4bfd3d0005485.jpeg@f_auto?token=f742eae7f392b41a11cd67cb2e7b4c6d"
-                        alt="Raiden Shogun">
-                    CHARACTER 10
-                </a>
-            </div>
-            <div class="character-item" data-category="Community">
-                <a href="talk.html?roleid=1">
-                    <img src="https://pics6.baidu.com/feed/c8177f3e6709c93d9deda2f26ee4bfd3d0005485.jpeg@f_auto?token=f742eae7f392b41a11cd67cb2e7b4c6d"
-                        alt="Raiden Shogun">
-                    CHARACTER 11
-                </a>
-            </div>
-            <div class="character-item" data-category="Community">
-                <a href="talk.html?roleid=1">
-                    <img src="https://pics6.baidu.com/feed/c8177f3e6709c93d9deda2f26ee4bfd3d0005485.jpeg@f_auto?token=f742eae7f392b41a11cd67cb2e7b4c6d"
-                        alt="Raiden Shogun">
-                    CHARACTER 12
-                </a>
-            </div>
+            {% endfor %}
         </div>
     </div>
 
@@ -292,6 +282,22 @@
     </footer>
 
     <script>
+        function initCharacterList() {
+          // var background_list = "{{ background_list }}";                        //django的dtl用法，获取username字符串
+          // var background_list_r = background_list.replace(/\&quot;/g, '\"');    //然后反转义一下，将&quot转为"
+          // var background_list_r_p = JSON.parse(background_list_r);
+          // console.log("background_list=" + background_list);
+          // console.log("background_list_r="+ background_list_r);
+          // console.log("json="+ JSON.stringify(background_list_r_p));
+
+          // for (var item of background_list_r_p) {
+          //   console.log(item.pk, item.fields.image, item.fields.original_name);
+          //   $("#selectBgImg").append('<option data-url="'+item.fields.image+'" value="'+item.pk+'">'+ item.fields.original_name +'</option>');
+          // }
+        }
+
+        initCharacterList();
+
         // 获取所有 Tab 和角色项
         const tabs = document.querySelectorAll('.tab');
         const characterItems = document.querySelectorAll('.character-item');

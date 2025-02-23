@@ -1,198 +1,280 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Talk to your AI Companion</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            text-align: center;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            width: 100%;
-        }
-        h1 {
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-        .headphone-notice {
-            font-size: 18px;
-            color: #555;
-            margin-bottom: 20px;
-        }
 
-
-        .tab-wrapper {
-            background-color: #e0e0e0;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .tab-container {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .tab {
-            padding: 15px 30px;
-            background-color: #fff;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s ease;
-        }
-
-        .tab.active {
-            background-color: #007bff;
-            color: #fff;
-        }
-
-        .tab:hover {
-            background-color: #d0d0d0;
-        }
-
-        .chat-container {
-            background-color: #e0e0e0;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: left;
-        }
-        .chat-message {
-            margin-bottom: 15px;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-        .chat-message.user {
-            justify-content: flex-end;
-        }
-        .chat-message .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: #ccc;
-            flex-shrink: 0;
-        }
-        .chat-message.user .avatar {
-            background-color: #007bff;
-        }
-        .chat-message .message-content {
-            max-width: 70%;
-            padding: 10px;
-            border-radius: 10px;
-        }
-        .chat-message.user .message-content {
-            background-color: #007bff;
-            color: #fff;
-        }
-        .chat-message.character .message-content {
-            background-color: #fff;
-            color: #000;
-        }
-        .input-container {
-            display: flex;
-            gap: 10px;
-        }
-        .input-container input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-        .input-container button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .input-container button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/base/jquery-ui.css">
+    <link rel="icon" href="{% static 'favicon.ico' %}">
+    <link rel="stylesheet" href="{%static 'talk.css'%}">
 </head>
+
 <body>
+    <!-- Header 部分 -->
+    <header>
+        <div class="logo"><a href="/">Oddmeta AI</a></div>
+        <div class="header-links">
+            {% if user.is_authenticated %}
+            <a href="{% url 'admin/logout' %}?user_id={{user.id}}">登出</a>
+            {% else %}
+            <a href="{% url 'admin/login' %}">登录</a>
+            {% endif %}
+
+            {% if user.is_staff %}
+            <a href="/admin">控制台</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Tab 分类 -->
+    <div class="chatmode-tab-wrapper">
+        <div class="chatmode-tab-container">
+            <div class="chatmode-tab active" data-category="text-mode">Text mode</div>
+            <div class="chatmode-tab" data-category="3d-mode">3D mode</div>
+        </div>
+    </div>
+
     <div class="container">
-        <!-- Tab 分类 -->
-        <div class="tab-wrapper">
-            <div class="tab-container">
-                <div class="tab active" data-category="All">All</div>
-                <div class="tab" data-category="Community">Community</div>
-                <div class="tab" data-category="MyCharacters">My Characters</div>
+        <!-- 聊天区域 -->
+        <!-- 聊天记录显示区域 -->
+        <div class="chat-container" id="chatHistory">
+
+        </div>
+
+        <!-- 3D人物动作、表情控制区域 -->
+        <div class="emotion-container">
+            <div class="emotion-item">
+                <label>Emotion</label>
+                <select id="myEmotions">
+                    <option value="neutral">Neutral</option>
+                    <option value="happy">happy</option>
+                </select>
+            </div>
+            <div class="emotion-item">
+                <label>Action</label>
+                <select id="myActions">
+                    <option value="angry-female-standing-angrily">angry-female-standing-angrily</option>
+                    <option value="clapping-male-clap-while-standing">clapping-male-clap-while-standing</option>
+                </select>
             </div>
         </div>
 
-        <div class="chat-container">
-            <!-- 角色消息 -->
-            <div class="chat-message character">
-                <div class="avatar">
-                    <img src="https://via.placeholder.com/40" alt="Steve Jobs" style="width: 100%; height: 100%; border-radius: 50%;">
-                </div>
-                <div class="message-content">
-                    Hi, my friend, what brings you here today?
-                </div>
-            </div>
-            <!-- 用户消息 -->
-            <div class="chat-message user">
-                <div class="message-content">
-                    你能说中文吗
-                </div>
-                <div class="avatar">
-                    <img src="https://via.placeholder.com/40" alt="User" style="width: 100%; height: 100%; border-radius: 50%;">
-                </div>
-            </div>
-            <!-- 角色消息 -->
-            <div class="chat-message character">
-                <div class="avatar">
-                    <img src="https://via.placeholder.com/40" alt="Steve Jobs" style="width: 100%; height: 100%; border-radius: 50%;">
-                </div>
-                <div class="message-content">
-                    我很抱歉，我不会说中文。但是，我相信技术的力量可以帮助我们打破语言障碍。您有其他问题需要帮助吗？
-                </div>
-            </div>
-            <!-- 用户消息 -->
-            <div class="chat-message user">
-                <div class="message-content">
-                    苹果手机推出几代了
-                </div>
-                <div class="avatar">
-                    <img src="https://via.placeholder.com/40" alt="User" style="width: 100%; height: 100%; border-radius: 50%;">
-                </div>
-            </div>
-            <!-- 角色消息 -->
-            <div class="chat-message character">
-                <div class="avatar">
-                    <img src="https://via.placeholder.com/40" alt="Steve Jobs" style="width: 100%; height: 100%; border-radius: 50%;">
-                </div>
-                <div class="message-content">
-                    哇，苹果手机已经推出了很多代了！从第一代iPhone到现在的iPhone 14系列，我们一直在不断创新和改进。但是，我需要更多的信息来回答您的问题。您是想知道具体有多少代吗？还是有其他相关的问题？请提供更多细节，我会尽力帮助您。
-                </div>
-            </div>
-        </div>
+        <!-- 聊天输入框区域 -->
         <div class="input-container">
-            <input type="text" placeholder="Type your message">
-            <button>Send Message</button>
+            <div class="session-container">
+                <!-- 会话列表区域 -->
+                <select id="mySelect">
+                    <option value="option1">option1</option>
+                    <option value="option2">option2</option>
+                </select>
+            </div>
+            <input type="text" id="chatInput" placeholder="Type your message">
+            <button class="chat-button" id="chatButton">Send Message</button>
         </div>
     </div>
 </body>
+
 </html>
+
+<script>
+    var user_id = "";
+    var user_name = "Catherine";
+    var session_id = "";
+    var agent_id = "";
+    var token = "123456";
+    var role_name = "小落";
+
+    $(document).ready(function() {
+        // 获取 select 元素
+        var selectElement = document.getElementById('mySelect');
+
+        // 从后端获取 chat session options
+        $.ajax({
+                url: '{% url "chatsessions" %}',  // 使用Django模板标签生成URL
+                type: 'GET',
+                dataType: 'json',
+                data: {token: token, user_id: user_id}, 
+                success: function(data) {
+                    var select = $('#mySelect');
+                    // console.log("data: " + JSON.stringify(data));
+                    select.empty();  // 清空已有的选项
+                    $.each(data, function(index, option) {
+                        select.append(
+                            $('<option></option>').val(option.value).text(option.text)
+                        );
+                    });
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error('Error fetching options:', textStatus, errorThrown);
+                }
+            });
+
+        // 
+        // 事件监听: 添加session列表框的change事件监听器
+        selectElement.addEventListener('change', function() {
+            // 当选项发生变化时执行的代码
+            console.log('选项已发生变化:', selectElement.value);
+            $.ajax({
+                url: '{% url "session_msgs" %}', 
+                type: 'GET',
+                dataType: "json", 
+                data: { token: token, user_id: user_id, session_id: selectElement.value },  // 将输入值发送到服务器以获取选项
+                success: function(data) {
+                    console.log("data=" + JSON.stringify(data));
+
+                    // 记住当前选中的session_id，后面聊天时以这个session_id来进行
+                    session_id = selectElement.value;
+
+                    // 清空现有的聊天记录
+                    const chatHistory = document.getElementById('chatHistory');
+                    chatHistory.innerHTML = "";
+
+                    // 使用reverse()方法颠倒数组的顺序,因为后端筛选的时候是按时间倒序排序的
+                    data.reverse();
+
+                    // 将后端返回的聊天记录列表遍历，并逐一添加到聊天记录里
+                    $.each(data, function(index, msg) {
+                        if (msg.sender_type == 0) {
+                            addUserMessage(msg.content);
+                        } else {
+                            addBotMessage(msg.content);
+                        }
+                    });
+                }, 
+
+            });
+        });
+
+        // 事件监听: 为chatButton添加 click 点击事件监听器，监听点击事件，并调用sendMessage函数
+        document.getElementById('chatButton').addEventListener('click', sendMessage);
+
+        // 事件监听: 为chatInput添加 keypress 键盘事件监听器，监听回车键（不同时按shift键），并调用sendMessage函数
+        document.getElementById('chatInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                sendMessage();
+            }
+        });
+
+    });
+
+    // 定义一个异步函数来发送HTTP请求
+    async function sendHttpRequest(input) {
+        try {
+            // 定义参数
+            const params = new URLSearchParams({
+                token: token,
+                your_name: user_name,
+                user_id: user_id,
+                agent_id: agent_id,
+                session_id: session_id,
+                query: input
+            });
+
+            // 构建完整的 URL
+            const url = `http://localhost:8000/chat/api?${params.toString()}`;
+    
+            // 发送 GET 请求
+            const response = await fetch(url);
+
+            // 检查响应状态
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+    
+            // 将响应转换为JSON格式
+            const data = await response.json();
+
+            // 输出响应数据
+            console.log('Response data:', JSON.stringify(data));
+
+            // 接收后端传回来的信息
+            user_id = data["user_id"];
+            session_id = data["session_id"];
+            agent_id = data["agent_id"];
+
+            // 添加机器人消息
+            addBotMessage(data["response"]);
+        } catch (error) {
+            // 捕获并处理错误
+            console.error('Error:', error);
+        }
+    }
+
+    // 发送消息
+    function sendMessage() {
+        const input = document.getElementById('chatInput').value.trim();
+        if (input) {
+            // 添加用户消息到界面
+            addUserMessage(input);
+            // 发送消息
+            sendHttpRequest(input);
+        }
+    }
+
+    // 添加用户消息到界面
+    function addUserMessage(message) {
+        const chatHistory = document.getElementById('chatHistory');
+
+        // 添加用户消息
+        const chatMessage = document.createElement('div');
+        chatMessage.classList.add('chat-message', 'user');
+
+        msgContent = document.createElement('pre');
+        msgContent.classList.add('message-content');
+        msgContent.textContent = message;
+
+        avatar = document.createElement('div');
+        avatar.classList.add('avatar');
+        img = document.createElement('img');
+        img.src = "/media/avatar/avatar1.png";
+        img.classList.add('avatarimg');
+        img.alt = user_name;
+
+        avatar.appendChild(img);
+        chatMessage.appendChild(msgContent);
+        chatMessage.appendChild(avatar);
+
+        chatHistory.appendChild(chatMessage);
+
+        // 清空输入框
+        document.getElementById('chatInput').value = '';
+    }
+
+    // 添加机器人消息到界面
+    function addBotMessage(message) {
+        const chatHistory = document.getElementById('chatHistory');
+
+        // 添加机器人消息
+        const botMessage = document.createElement('div');
+        botMessage.classList.add('chat-message', 'character');
+
+        msgContent = document.createElement('pre');
+        msgContent.classList.add('message-content');
+        msgContent.textContent  = message;
+        
+        avatar = document.createElement('div');
+        avatar.classList.add("avatar");
+
+        img = document.createElement('img');
+        img.src = "/media/avatar/avatar2.png";
+        img.classList.add('avatarimg');
+        img.alt = role_name;
+        
+        avatar.appendChild(img);
+        botMessage.appendChild(avatar);
+        botMessage.appendChild(msgContent);
+        chatHistory.appendChild(botMessage);
+
+        // 清空输入框
+        document.getElementById('chatInput').value = '';
+        // 滚动到底部
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+
+</script>

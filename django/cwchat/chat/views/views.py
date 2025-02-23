@@ -1,17 +1,18 @@
 # from rest_framework import viewsets
 # from rest_framework.decorators import action
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
+from django.urls import get_resolver
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_200_OK
 
 from django.shortcuts import render
 
-from .engine.llm_engine import chat_api
-from .engine.utils import new_uuid
+from ..engine.llm_engine import chat_api
+from ..engine.str_utils import new_uuid
 
-from .models import SessionModel, MessageModel, AgentModel
-from .serializers import SessionModelSerializer, MessageModelSerializer, AgentModelSerializer
+from ..models.models import SessionModel, MessageModel, AgentModel
+from ..serializers import SessionModelSerializer, MessageModelSerializer, AgentModelSerializer
 
 import logging
 import json
@@ -44,6 +45,22 @@ def talk_view(request):
     context = {'sessions': sessions}
 
     return render(request, 'talk.html', context)
+
+def show_urls_view(request):
+    resolver = get_resolver()
+    url_patterns = []
+
+    def show_urls(patterns, prefix=''):
+        for pattern in patterns:
+            if hasattr(pattern, 'url_patterns'):
+                show_urls(pattern.url_patterns, prefix + str(pattern.pattern))
+            else:
+                url_patterns.append(prefix + str(pattern.pattern))
+
+    show_urls(resolver.url_patterns)
+
+    output = '\n'.join(url_patterns)
+    return HttpResponse(output)
 
 
 def chatapi(request):

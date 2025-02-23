@@ -38,10 +38,22 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'chat',
-    'drf_yasg',
     'rest_framework',
+    'drf_yasg',
+    'channels',
+    'chat',
+    # "daphne",
+    # 'django_extensions',
+    # 'corsheaders',
 ]
+
+
+ASGI_APPLICATION = 'cwchat.asgi.application'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -74,6 +86,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cwchat.wsgi.application'
 
+
+X_FRAME_OPTIONS = 'ALLOWALL'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -109,13 +123,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -126,8 +136,13 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static/threevrm',
 ]
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Avoid auto jump to login page http://localhost:8000/accounts/login/?next=/admin/
+LOGIN_URL = '/admin/login.html'

@@ -17,13 +17,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.urls import include
+from django.conf import settings
 
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
-from chat.views_3d import CharacterView
-from chat.views import talk_view
+from django.conf.urls.static import static
+
+from chat.views.views_3d import CharacterView
+from chat.views.views import talk_view, show_urls_view
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -40,14 +43,21 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-    path('admin/', admin.site.urls),
+
+    path('show_urls/', show_urls_view, name='show_urls'),
+
+    # path('admin/', admin.site.urls),
+    path('admin/', include("chat.urls_admin")),
     path("chat/", include("chat.urls")),
-    path('', CharacterView.default, name='default'),
+    path("threevrm/", include("chat.urls_three")),
+
+    path('', CharacterView.default, name='home'),
+
     path('talk.html', talk_view, name='talk_view'),
     path('test3d.html', CharacterView.test3d, name='test3d'),
     path('test3vrm.html', CharacterView.test3vrm, name='test3vrm'),
-    path('test-3vrm.html', CharacterView.test_3vrm, name='test_3vrm'),
-    path("threevrm/", include("chat.urls_three")),
+    path('test3vrm2.html', CharacterView.test3vrm2, name='test3vrm2'),
     
 ]
 
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

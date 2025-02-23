@@ -1,8 +1,8 @@
 from django.urls import path, include
 from django.urls import re_path as url
 
-from .views import index, chatapi, chat_sessions, session_msgs
-from .views_3d import CharacterAction, CharacterEmotion
+from .views.views import index, chatapi, chat_sessions, session_msgs
+from .views.views_3d import CharacterAction, CharacterEmotion
 
 urlpatterns = [
     path('index.html', index, name='chat/index'),

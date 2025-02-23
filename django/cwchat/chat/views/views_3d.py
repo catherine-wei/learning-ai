@@ -9,14 +9,15 @@ from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_200_OK
 
 from django.shortcuts import render
 
+from ..engine.llm_engine import chat_api
+from ..engine.str_utils import new_uuid
 
+from ..models.models import SessionModel, MessageModel, AgentModel
+from ..models.model_character import CharacterRoleModel
+from ..serializers import SessionModelSerializer, MessageModelSerializer, AgentModelSerializer
 
-from .engine.llm_engine import chat_api
-from .engine.utils import new_uuid
 from .views import get_userinfo_by_token
-
-from .models import SessionModel, MessageModel, AgentModel
-from .serializers import SessionModelSerializer, MessageModelSerializer, AgentModelSerializer
+from .view_character import CharacterRole
 
 import logging
 import json
@@ -28,17 +29,40 @@ class CharacterView:
     def default(request):
         token = request.GET.get("token")
         user_info = get_userinfo_by_token(token=token)
-        user_id = user_info.get('user_id')  # 假设get_userinfo_by_token返回一个包含user_id的字典
-        print(f"userid={user_id}")
 
-        # 查询SessionModel里属于这个user_id的记录列表
-        sessions = SessionModel.objects.filter(user_id=user_id)
+        role_list = []
+        roles = None
+        sessions = None
 
-        context = {'sessions': sessions}
+        if user_info != None:
+            user_id = user_info.get('user_id')  # 假设get_userinfo_by_token返回一个包含user_id的字典
+            print(f"userid={user_id}")
+            # 查询SessionModel里属于这个user_id的记录列表
+            sessions = SessionModel.objects.filter(user_id=user_id)
+            roles = CharacterRoleModel.objects.filter() # 括号内可以写条件
+        else:
+            sessions = SessionModel.objects.filter(user_id=0)
+            roles = CharacterRoleModel.objects.filter() # 括号内可以写条件
+        
+        for role in roles:
+            role_list.append({
+                'role_id': str(role.id),
+                'role_name': role.role_name,
+                'role_avatar': role.avatar,
+                'role_audio_url': role.audio_url,
+                'gender': str(role.gender),
+                'user_id': str(role.user_id),
+                'permission': str(role.permission)
+                #'mobile': User.objects.filter(username=blog.user)[0].mobile
+            })
 
-        return render(request, 'default.html', context)
+        print(f"characters={role_list}")
 
-    def test_3vrm(request):
+        context = {'sessions': sessions, 'character_role_list': role_list}
+
+        return render(request, 'default.html', {'character_role_list': role_list})
+
+    def test3vrm2(request):
         token = request.GET.get("token")
         user_info = get_userinfo_by_token(token=token)
         user_id = user_info.get('user_id')  # 假设get_userinfo_by_token返回一个包含user_id的字典
@@ -49,7 +73,7 @@ class CharacterView:
 
         context = {'sessions': sessions}
 
-        return render(request, 'test-3vrm.html', context)
+        return render(request, 'test3vrm2.html', context)
 
     # Create your views here.
     def test3vrm(request):
